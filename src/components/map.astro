@@ -1,0 +1,86 @@
+---
+import "mapbox-gl/dist/mapbox-gl.css";
+---
+
+<div id="map" class="h-full"></div>
+
+<script>
+  import mapboxgl from "mapbox-gl";
+  import imaBalneabilidade from "../data/ima_balneabilidade.json";
+  import countries from "../data/countries.json";
+  import brazilStates from "../data/br_states.json";
+  import { imaToGeoJson } from "../utils/parsers";
+
+  const beachsPointsLayer = imaToGeoJson(imaBalneabilidade);
+
+  mapboxgl.accessToken = import.meta.env.PUBLIC_MAPBOX_TOKEN;
+  const map = new mapboxgl.Map({
+    container: "map", // container ID
+    style: "mapbox://styles/mapbox/dark-v11", // style URL
+    center: [-48.55854, -27.5935], // starting position [lng, lat]
+    zoom: 9, // starting zoom
+  });
+  map.on("load", () => {
+    map.addSource("beach", {
+      type: "geojson",
+      data: beachsPointsLayer,
+      generateId: true,
+    });
+    map.addSource("countries", {
+      type: "geojson",
+      data: countries,
+      generateId: true,
+    });
+    map.addSource("brazilStates", {
+      type: "geojson",
+      data: brazilStates,
+      generateId: true,
+    });
+
+    map.addLayer({
+      id: "beach-circles",
+      type: "circle",
+      source: "beach",
+      paint: {
+        "circle-color": [
+          "step",
+          ["get", "total"],
+          "#a0c4ff",
+          800,
+          "#fdffb6",
+          1000,
+          "#ffadad",
+        ],
+        "circle-opacity": 0.8,
+      },
+    });
+    map.addLayer({
+      id: "countries-fill",
+      type: "fill",
+      source: "countries",
+      paint: {
+        "fill-color": [
+          "match",
+          ["get", "ADMIN"],
+          "Brazil",
+          "rgba(0,0,0,0)",
+          "rgba(0,0,0,0.5)",
+        ],
+      },
+    });
+    map.addLayer({
+      id: "states-fill",
+      type: "fill",
+      source: "brazilStates",
+      paint: {
+        "fill-color": [
+          "match",
+          ["get", "SIGLA"],
+          "SC",
+          "rgba(0,0,0,0)",
+          "rgba(0,0,0,0.5)",
+        ],
+      },
+    });
+  });
+</script>

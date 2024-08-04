@@ -1,0 +1,83 @@
+<div
+  id="chart"
+  class="h-full flex flex-col justify-center shadow-md border-t border-slate-700"
+>
+</div>
+
+<script>
+  import * as d3 from "d3";
+  import { mainHistogramData } from "@utils/parsers";
+  import imaData from "@data/ima_balneabilidade.json";
+  import type { ImaItem } from "@utils/app.types";
+
+  const data = mainHistogramData(imaData as ImaItem[]);
+
+  const dimensions = {
+    width: 600,
+    height: 400,
+    margins: 50,
+    ctrWidth: 0,
+    ctrHeight: 0,
+  };
+  dimensions.ctrWidth = dimensions.width - dimensions.margins * 2;
+  dimensions.ctrHeight = dimensions.height - dimensions.margins * 2;
+
+  const bins = d3
+    .bin()
+    .thresholds(20)
+    .value((d) => d)(data);
+
+  const xScale = d3
+    .scaleLinear()
+    .domain([bins[0].x0, bins[bins.length - 1].x1])
+    .range([0, dimensions.ctrWidth])
+    .nice();
+
+  const yScale = d3
+    .scaleLinear()
+    .domain([0, d3.max(bins, (d) => d.length)])
+    .range([dimensions.ctrHeight, 0])
+    .nice();
+
+  const svg = d3
+    .select("#chart")
+    .append("svg")
+    .attr("width", dimensions.width)
+    .attr("height", dimensions.height);
+
+  const container = svg
+    .append("g")
+    .attr(
+      "transform",
+      `translate(${dimensions.margins}, ${dimensions.margins})`,
+    );
+
+  // bars
+  container
+    .append("g")
+    .selectAll("rect")
+    .data(bins)
+    .join("rect")
+    .attr("width", (d) => xScale(d.x1) - xScale(d.x0) - 1)
+    .attr("height", (d) => yScale(0) - yScale(d.length))
+    .attr("x", (d) => xScale(d.x0) + 1)
+    .attr("y", (d) => yScale(d.length))
+    .attr("class", "fill-blue-500");
+
+  // labels
+  container
+    .append("g")
+    .selectAll("text")
+    .data(bins)
+    .join("text")
+    .attr("x", (d) => xScale(d.x0) + (xScale(d.x1) - xScale(d.x0)) / 2)
+    .attr("y", (d) => yScale(d.length + 4))
+    .attr("class", "bar-labels")
+    .text((d) => d.length);
+
+  // xAxis
+  container
+    .append("g")
+    .attr("transform", `translate(0, ${dimensions.ctrHeight})`)
+    .call(d3.axisBottom(xScale));
+</script>
